@@ -40,6 +40,7 @@ struct dim {
 };
 
 // TODO: Fallback texture
+// TODO: Tetutes get canvas size from caller!
 class texture_manager {
  public:
   static constexpr uint32_t kNoImage = std::numeric_limits<uint32_t>::max();
@@ -106,12 +107,13 @@ class texture_manager {
     return textures_.size() - 1;
   }
 
-  void render(SDL_Renderer* renderer, uint32_t tex_id, float screen_x, float screen_y) {
+  void render(SDL_Renderer* renderer, uint32_t tex_id, float center_x, float center_y) {
     if (tex_id >= textures_.size()) {
       return;
     }
 
-    SDL_FRect dst_rect{screen_x, screen_y, static_cast<float>(dimentions_[tex_id].width), static_cast<float>(dimentions_[tex_id].height)};
+    SDL_FRect dst_rect{center_x - static_cast<float>(dimentions_[tex_id].width) / 2, center_y - static_cast<float>(dimentions_[tex_id].height) / 2,
+                       static_cast<float>(dimentions_[tex_id].width), static_cast<float>(dimentions_[tex_id].height)};
 
     SDL_RenderTexture(renderer, textures_[tex_id].ptr(), nullptr, &dst_rect);
   }
