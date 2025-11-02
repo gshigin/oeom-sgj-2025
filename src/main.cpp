@@ -74,24 +74,17 @@ struct motion {
   float dy;
   float ddx;
   float ddy;
-
-  // uint16_t position_id;
 };
 
 struct drag {
   float shift_x;
   float shift_y;
-
-  // uint16_t position_id;
-  // uint16_t dimention_id;
 };
 
 struct mouse_tracker {
   float anchor_x;
   float anchor_y;
   float max_radius;
-
-  // uint16_t position_id;
 };
 
 // TODO: Try OOD table method to arrange data
