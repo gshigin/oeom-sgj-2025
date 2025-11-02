@@ -1,0 +1,5 @@
+---
+Language: Cpp
+Standard: c++20
+BasedOnStyle: Chromium
+ColumnLimit: 160
