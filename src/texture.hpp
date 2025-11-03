@@ -4,11 +4,11 @@
 #include <SDL3_image/SDL_image.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "SDL3/SDL_log.h"
 
 class texture {
  public:
@@ -36,14 +36,14 @@ class texture {
   SDL_Texture* texture_ptr_ = nullptr;
 };
 
-struct dim {
-  uint16_t width;
-  uint16_t height;
-};
-
 // TODO: Fallback texture
 // TODO: Tetutes get canvas size from caller!
 class texture_manager {
+  struct dim {
+    uint16_t width;
+    uint16_t height;
+  };
+
  public:
   static constexpr uint32_t kNoImage = std::numeric_limits<uint32_t>::max();
 
@@ -145,23 +145,15 @@ class texture_manager {
     return textures_.size() - 1;
   }
 
-  void render(SDL_Renderer* renderer, uint32_t tex_id, float center_x, float center_y) noexcept {
+  void render(SDL_Renderer* renderer, uint32_t tex_id, float center_x, float center_y, float width, float height) noexcept {
     if (tex_id >= textures_.size()) {
       return;
     }
 
-    SDL_FRect dst_rect{center_x - static_cast<float>(dimentions_[tex_id].width) / 2, center_y - static_cast<float>(dimentions_[tex_id].height) / 2,
-                       static_cast<float>(dimentions_[tex_id].width), static_cast<float>(dimentions_[tex_id].height)};
+    SDL_FRect dst_rect{center_x - static_cast<float>(width) / 2, center_y - static_cast<float>(height) / 2, static_cast<float>(width),
+                       static_cast<float>(height)};
 
     SDL_RenderTexture(renderer, textures_[tex_id].ptr(), nullptr, &dst_rect);
-  }
-
-  void resize(uint32_t tex_id, uint16_t new_width, uint16_t new_height) noexcept {
-    if (tex_id >= textures_.size()) {
-      return;
-    }
-
-    dimentions_[tex_id] = {.width = new_width, .height = new_height};
   }
 
   void set_name(uint32_t tex_id, std::string name) noexcept {
@@ -171,11 +163,19 @@ class texture_manager {
     name_to_id_[name] = tex_id;
   }
 
-  uint32_t get_id(const std::string& name) const noexcept {
+  uint32_t get_texture_id(const std::string& name) const noexcept {
     if (auto it = name_to_id_.find(name); it != name_to_id_.end()) {
       return it->second;
     }
     return kNoImage;
+  }
+
+  std::pair<uint16_t, uint16_t> get_texture_sizes(const std::string& name) const noexcept { return get_texture_sizes(get_texture_id(name)); }
+  std::pair<uint16_t, uint16_t> get_texture_sizes(uint32_t tex_id) const noexcept {
+    if (tex_id == kNoImage) {
+      return {0, 0};
+    }
+    return {dimentions_[tex_id].width, dimentions_[tex_id].height};
   }
 
  private:

@@ -10,10 +10,7 @@
 // Texture loading
 bool loadMedia(SDL_Renderer* renderer, texture_manager& texman) noexcept {
   auto dot_id = texman.load_texture_with_color_key_named(renderer, "assets/dot.png", "dot", 0xFF, 0xFF, 0xFF);
-
   auto sprite_id = texman.load_texture_named(renderer, "assets/jokr.png", "jokr");
-  texman.resize(sprite_id, kScreenWidth, kScreenHeight);
-
   auto tomato_id = texman.load_texture_named(renderer, "assets/tomato.png", "tomato");
 
   return true;

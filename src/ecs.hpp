@@ -6,8 +6,9 @@
 // entity
 struct handler_id {
   uint16_t position_id;  // position id is unique key for handler
-  uint16_t dimention_id;
+  uint16_t obj_size_id;
   uint16_t texture_id;
+  uint16_t tex_size_id;
   uint16_t motion_id;
   uint16_t drag_id;
   uint16_t tracker_id;
@@ -19,7 +20,12 @@ struct position {
   float y;
 };
 
-struct dimention {
+struct object_size {
+  float width;
+  float height;
+};
+
+struct texture_size {
   float width;
   float height;
 };
@@ -50,11 +56,12 @@ struct movable {
 struct drawable {
   uint16_t position_id;
   uint16_t texture_id;
+  uint16_t tex_size_id;
 };
 
 struct draggable {
   uint16_t position_id;
-  uint16_t dimention_id;
+  uint16_t obj_size_id;
   uint16_t drag_id;
   bool is_dragged;
 };
@@ -75,7 +82,10 @@ struct ECS {
 
   // components
   std::vector<position> positions;
-  std::vector<dimention> dimentions;
+  std::vector<object_size> object_sizes;
+
+  std::vector<texture_size> texture_sizes;
+
   std::vector<motion> motions;
   std::vector<drag> drags;
   std::vector<mouse_tracker> trackers;
@@ -95,8 +105,9 @@ struct ECS {
   // register entity
   handler_id register_object(float x, float y) noexcept {
     handler_id h{.position_id = static_cast<uint16_t>(positions.size()),
-                 .dimention_id = kNoId,
+                 .obj_size_id = kNoId,
                  .texture_id = kNoId,
+                 .tex_size_id = kNoId,
                  .motion_id = kNoId,
                  .drag_id = kNoId,
                  .tracker_id = kNoId};
@@ -131,8 +142,8 @@ struct ECS {
   }
 
   void add_dimetions(handler_id& handler, float w, float h) noexcept {
-    handler.dimention_id = dimentions.size();
-    dimentions.emplace_back(w, h);
+    handler.obj_size_id = object_sizes.size();
+    object_sizes.emplace_back(w, h);
   }
 
   void add_drag(handler_id& h) noexcept {
@@ -140,13 +151,21 @@ struct ECS {
     drags.emplace_back(0.f, 0.f);
   }
 
-  void add_texture(handler_id& h, uint16_t texture_id) noexcept {
-    h.texture_id = texture_id;
+  void add_texture(handler_id& handler, uint16_t texture_id) noexcept {
+    auto [w, h] = manager.get_texture_sizes(texture_id);
 
-    draws.emplace_back(h.position_id, h.texture_id);
+    add_texture(handler, texture_id, w, h);
   }
 
-  void make_draggable(handler_id& h) noexcept { draggs.emplace_back(h.position_id, h.dimention_id, h.drag_id, false); }
+  void add_texture(handler_id& handler, uint16_t texture_id, float w, float h) noexcept {
+    handler.texture_id = texture_id;
+    handler.tex_size_id = texture_sizes.size();
+
+    texture_sizes.emplace_back(w, h);
+    draws.emplace_back(handler.position_id, handler.texture_id, handler.tex_size_id);
+  }
+
+  void make_draggable(handler_id& h) noexcept { draggs.emplace_back(h.position_id, h.obj_size_id, h.drag_id, false); }
 
   // logic
   void move_dragged() noexcept {
@@ -218,7 +237,7 @@ struct ECS {
       SDL_GetMouseState(&x, &y);
       for (auto& drag_sys : draggs) {
         auto& dr = drags[drag_sys.drag_id];
-        const auto& dim = dimentions[drag_sys.dimention_id];
+        const auto& dim = object_sizes[drag_sys.obj_size_id];
         const auto& pos = positions[drag_sys.position_id];
 
         if (pos.x - dim.width / 2 <= x && x <= pos.x + dim.width / 2 && pos.y - dim.height / 2 <= y && y <= pos.y + dim.height / 2) {
@@ -235,7 +254,7 @@ struct ECS {
   handler_id create_dot(float x, float y, float dot_r, float anchor_r) noexcept {
     auto h = register_object(x, y);
 
-    add_texture(h, manager.get_id("dot"));
+    add_texture(h, manager.get_texture_id("dot"));
 
     add_tracker(h, x, y, anchor_r);
 
@@ -245,7 +264,7 @@ struct ECS {
   handler_id create_tomato(float x, float y) noexcept {
     auto h = register_object(x, y);
 
-    add_texture(h, manager.get_id("tomato"));
+    add_texture(h, manager.get_texture_id("tomato"));
 
     add_dimetions(h, 30, 30);
     add_drag(h);
@@ -257,8 +276,7 @@ struct ECS {
 
   handler_id create_bg() noexcept {
     auto h = register_object(kScreenWidth / 2, kScreenHeight / 2);
-    add_texture(h, manager.get_id("jokr"));
-    manager.resize(h.texture_id, kScreenWidth, kScreenHeight);
+    add_texture(h, manager.get_texture_id("jokr"), kScreenWidth, kScreenHeight);
 
     return h;
   }
@@ -266,8 +284,9 @@ struct ECS {
   void render() noexcept {
     for (auto dr : draws) {
       const auto& pos = positions[dr.position_id];
+      const auto& dim = texture_sizes[dr.tex_size_id];
 
-      manager.render(renderer, dr.texture_id, pos.x, pos.y);
+      manager.render(renderer, dr.texture_id, pos.x, pos.y, dim.width, dim.height);
     }
   }
 };
