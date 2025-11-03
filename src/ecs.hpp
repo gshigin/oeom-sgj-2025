@@ -4,6 +4,7 @@
 #include "texture.hpp"
 
 // entity
+// TODO: OOD data base design; handler_id needs only primary key! or handler is a bitmask
 struct handler_id {
   uint16_t position_id;  // position id is unique key for handler
   uint16_t obj_size_id;
@@ -71,6 +72,24 @@ struct mouse_trackable {
   uint16_t tracker_id;
 };
 
+struct clickable {
+  uint16_t position_id;
+  uint16_t obj_size_id;
+  bool is_pressed;
+  // press_event_id
+  // release_event_id
+  // pressed_texture_id
+};
+
+struct trigger_zone {
+  uint16_t position_id;
+  uint16_t obj_size_id;
+  bool is_is_zone;
+  // enter_event_id
+  // leave_event_id
+  // triggered_texture_id
+};
+
 // TODO: Try OOD table method to arrange data
 struct ECS {
   static constexpr uint16_t kNoId = std::numeric_limits<uint16_t>::max();
@@ -98,6 +117,8 @@ struct ECS {
   std::vector<drawable> draws;
   std::vector<draggable> draggs;
   std::vector<mouse_trackable> tracks;
+  std::vector<clickable> buttons;
+  std::vector<trigger_zone> zones;
 
   // to delete
   std::vector<uint16_t> to_delete;
@@ -166,6 +187,8 @@ struct ECS {
   }
 
   void make_draggable(handler_id& h) noexcept { draggs.emplace_back(h.position_id, h.obj_size_id, h.drag_id, false); }
+  void make_clickable(handler_id& h) noexcept { buttons.emplace_back(h.position_id, h.obj_size_id, false); }
+  void make_triggerable(handler_id& h) noexcept { zones.emplace_back(h.position_id, h.obj_size_id, false); }
 
   // logic
   void move_dragged() noexcept {
@@ -215,26 +238,46 @@ struct ECS {
   }
 
   void handle_event(SDL_Event& e) noexcept {
+    float x = -1.f, y = -1.f;
+    SDL_GetMouseState(&x, &y);
+
     if (e.type == SDL_EVENT_MOUSE_MOTION) {
       move_tracked();
       move_dragged();
-    }
 
-    else if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && !(SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_LEFT)) {
-      // nobody is dragged!
-      for (auto& drag_sys : draggs) {
-        if (drag_sys.is_dragged == true) {
-          SDL_Log("marking entt %d for delete\n", drag_sys.position_id);
-          destroy_entity(drag_sys.position_id);
+      // mouse might leave button
+      for (auto& click_sys : buttons) {
+        if (click_sys.is_pressed) [[unlikely]] {
+          const auto& dim = object_sizes[click_sys.obj_size_id];
+          const auto& pos = positions[click_sys.position_id];
+
+          if (pos.x - dim.width / 2 > x || x > pos.x + dim.width / 2 || pos.y - dim.height / 2 > y || y > pos.y + dim.height / 2) {
+            SDL_Log("Mouse left button %d scope; won't trigger event\n", click_sys.position_id);
+            click_sys.is_pressed = false;
+            // no event trigger
+          }
         }
-        drag_sys.is_dragged = false;
+      }
+
+      // mouse might enter or leave zone
+      for (auto& zone_sys : zones) {
+        const auto& dim = object_sizes[zone_sys.obj_size_id];
+        const auto& pos = positions[zone_sys.position_id];
+
+        const bool is_now_in_zone = (pos.x - dim.width / 2 <= x && x <= pos.x + dim.width / 2 && pos.y - dim.height / 2 <= y && y <= pos.y + dim.height / 2);
+        if (is_now_in_zone ^ zone_sys.is_is_zone) {
+          if (zone_sys.is_is_zone) {
+            SDL_Log("Zone %d is left; trigger leave event\n", zone_sys.position_id);
+          } else {
+            SDL_Log("Zone %d is entered; trigger enter event\n", zone_sys.position_id);
+          }
+          zone_sys.is_is_zone = !zone_sys.is_is_zone;
+        }
       }
     }
 
-    else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_LEFT)) {
+    else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_MASK(SDL_BUTTON_LEFT))) {
       // someone can be dragged!
-      float x = -1.f, y = -1.f;
-      SDL_GetMouseState(&x, &y);
       for (auto& drag_sys : draggs) {
         auto& dr = drags[drag_sys.drag_id];
         const auto& dim = object_sizes[drag_sys.obj_size_id];
@@ -245,6 +288,42 @@ struct ECS {
 
           dr.shift_x = pos.x - x;
           dr.shift_y = pos.y - y;
+        }
+      }
+
+      // or clicked!
+      for (auto& click_sys : buttons) {
+        const auto& dim = object_sizes[click_sys.obj_size_id];
+        const auto& pos = positions[click_sys.position_id];
+
+        if (pos.x - dim.width / 2 <= x && x <= pos.x + dim.width / 2 && pos.y - dim.height / 2 <= y && y <= pos.y + dim.height / 2) {
+          SDL_Log("button %d is pressed; trigger press event\n", click_sys.position_id);
+          click_sys.is_pressed = true;
+        }
+      }
+    }
+
+    else if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && !(SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_MASK(SDL_BUTTON_LEFT))) {
+      // nobody is dragged!
+      for (auto& drag_sys : draggs) {
+        if (drag_sys.is_dragged == true) {
+          SDL_Log("marking entt %d for delete\n", drag_sys.position_id);
+          destroy_entity(drag_sys.position_id);
+        }
+        drag_sys.is_dragged = false;
+      }
+
+      // button may be released
+      for (auto& click_sys : buttons) {
+        const auto& dim = object_sizes[click_sys.obj_size_id];
+        const auto& pos = positions[click_sys.position_id];
+
+        if (pos.x - dim.width / 2 <= x && x <= pos.x + dim.width / 2 && pos.y - dim.height / 2 <= y && y <= pos.y + dim.height / 2) {
+          if (click_sys.is_pressed == true) {
+            click_sys.is_pressed = false;
+            SDL_Log("button %d is released; trigger release event\n", click_sys.position_id);
+            // trigger some event
+          }
         }
       }
     }
