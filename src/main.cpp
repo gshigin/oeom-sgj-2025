@@ -1,8 +1,3 @@
-/*This source code copyrighted by Lazy Foo' Productions 2004-2025
-and may not be redistributed without written permission.*/
-
-/* Headers */
-// Using SDL, SDL_image, and STL string
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_image/SDL_image.h>
@@ -13,7 +8,7 @@ and may not be redistributed without written permission.*/
 #include "timer.hpp"
 
 // Texture loading
-bool loadMedia(SDL_Renderer* renderer, texture_manager& texman) {
+bool loadMedia(SDL_Renderer* renderer, texture_manager& texman) noexcept {
   auto dot_id = texman.load_texture_with_color_key_named(renderer, "assets/dot.png", "dot", 0xFF, 0xFF, 0xFF);
 
   auto sprite_id = texman.load_texture_named(renderer, "assets/jokr.png", "jokr");
@@ -24,13 +19,13 @@ bool loadMedia(SDL_Renderer* renderer, texture_manager& texman) {
   return true;
 }
 
-void game_loop(ECS& ecs, SDL_Renderer* renderer) {
+void game_loop(ECS& ecs, SDL_Renderer* renderer) noexcept {
   bool quit = false;
   SDL_Event e;
-  LTimer capTimer;
+  timer cap_timer;
 
   while (!quit) {
-    capTimer.start();
+    cap_timer.start();
 
     while (SDL_PollEvent(&e)) {
       if (e.type == SDL_EVENT_QUIT)
@@ -38,6 +33,7 @@ void game_loop(ECS& ecs, SDL_Renderer* renderer) {
       else
         ecs.handle_event(e);
     }
+    ecs.cleanup();
 
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     SDL_RenderClear(renderer);
@@ -46,8 +42,8 @@ void game_loop(ECS& ecs, SDL_Renderer* renderer) {
 
     SDL_RenderPresent(renderer);
 
-    constexpr Uint64 nsPerFrame = 1'000'000'000 / kScreenFps;
-    Uint64 frameNs = capTimer.getTicksNS();
+    constexpr uint64_t nsPerFrame = 1'000'000'000 / kScreenFps;
+    uint64_t frameNs = cap_timer.get_ticks_ns();
     if (frameNs < nsPerFrame) {
       SDL_DelayNS(nsPerFrame - frameNs);
     }
@@ -63,7 +59,7 @@ int main(int argc, char* args[]) {
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
 
-  if (SDL_CreateWindowAndRenderer("ЩЩЩЩЩЩЩЩЩЩЩЩ", kScreenWidth, kScreenHeight, 0, &window, &renderer) == false) {
+  if (SDL_CreateWindowAndRenderer("Head is hungry", kScreenWidth, kScreenHeight, 0, &window, &renderer) == false) {
     SDL_Log("SDL_CreateWindowAndRenderer failed: %s", SDL_GetError());
     SDL_Quit();
     return 2;
@@ -84,7 +80,11 @@ int main(int argc, char* args[]) {
   handler_id dot1 = ecs.create_dot(kScreenWidth / 2 - 35, kScreenHeight / 2 - 115, 20, 20);
   handler_id dot2 = ecs.create_dot(kScreenWidth / 2 + 128, kScreenHeight / 2 - 115, 20, 20);
   handler_id jokr = ecs.create_bg();
-  handler_id tomato = ecs.create_tomato(kScreenWidth / 4, kScreenHeight / 4);
+
+  handler_id tomato1 = ecs.create_tomato(kScreenWidth / 4, kScreenHeight / 4);
+  handler_id tomato2 = ecs.create_tomato(3 * kScreenWidth / 4, 3 * kScreenHeight / 4);
+  handler_id tomato3 = ecs.create_tomato(kScreenWidth / 4, 3 * kScreenHeight / 4);
+  handler_id tomato4 = ecs.create_tomato(3 * kScreenWidth / 4, kScreenHeight / 4);
 
   game_loop(ecs, renderer);
 

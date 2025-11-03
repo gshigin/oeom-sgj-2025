@@ -30,7 +30,7 @@ class texture {
     }
   }
 
-  SDL_Texture* ptr() const { return texture_ptr_; }
+  SDL_Texture* ptr() const noexcept { return texture_ptr_; }
 
  private:
   SDL_Texture* texture_ptr_ = nullptr;
@@ -47,18 +47,19 @@ class texture_manager {
  public:
   static constexpr uint32_t kNoImage = std::numeric_limits<uint32_t>::max();
 
-  uint32_t load_texture(SDL_Renderer* renderer, const std::string& path) { return load_texture_named(renderer, path, ""); }
+  uint32_t load_texture(SDL_Renderer* renderer, const std::string& path) noexcept { return load_texture_named(renderer, path, ""); }
 
-  uint32_t load_texture_with_color_key(SDL_Renderer* renderer, const std::string& path, uint8_t red, uint8_t green, uint8_t blue) {
+  uint32_t load_texture_with_color_key(SDL_Renderer* renderer, const std::string& path, uint8_t red, uint8_t green, uint8_t blue) noexcept {
     return load_texture_with_color_key_named(renderer, path, "", red, green, blue);
   }
 
-  uint32_t load_texture_from_text(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) {
+  uint32_t
+  load_texture_from_text(SDL_Renderer* renderer, TTF_Font* font, const std::string& text, uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha) noexcept {
     return load_texture_from_text_named(renderer, font, "", text, red, green, blue, alpha);
   }
 
   // named
-  uint32_t load_texture_named(SDL_Renderer* renderer, const std::string& path, const std::string& name) {
+  uint32_t load_texture_named(SDL_Renderer* renderer, const std::string& path, const std::string& name) noexcept {
     if (SDL_Surface* loadedSurface = IMG_Load(path.c_str()); loadedSurface == nullptr) {
       SDL_Log("Unable to load image %s! SDL_image error: %s\n", path.c_str(), SDL_GetError());
       return kNoImage;
@@ -86,7 +87,7 @@ class texture_manager {
                                              const std::string& name,
                                              uint8_t red,
                                              uint8_t green,
-                                             uint8_t blue) {
+                                             uint8_t blue) noexcept {
     if (SDL_Surface* loadedSurface = IMG_Load(path.c_str()); loadedSurface == nullptr) {
       SDL_Log("Unable to load image %s! SDL_image error: %s\n", path.c_str(), SDL_GetError());
       return std::numeric_limits<uint32_t>::max();
@@ -121,7 +122,7 @@ class texture_manager {
                                         uint8_t red,
                                         uint8_t green,
                                         uint8_t blue,
-                                        uint8_t alpha) {
+                                        uint8_t alpha) noexcept {
     if (SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), 0, SDL_Color{red, green, blue, alpha}); textSurface == nullptr) {
       SDL_Log("Unable to render text surface! SDL_ttf Error: %s\n", SDL_GetError());
       return std::numeric_limits<uint32_t>::max();
@@ -144,7 +145,7 @@ class texture_manager {
     return textures_.size() - 1;
   }
 
-  void render(SDL_Renderer* renderer, uint32_t tex_id, float center_x, float center_y) {
+  void render(SDL_Renderer* renderer, uint32_t tex_id, float center_x, float center_y) noexcept {
     if (tex_id >= textures_.size()) {
       return;
     }
@@ -155,7 +156,7 @@ class texture_manager {
     SDL_RenderTexture(renderer, textures_[tex_id].ptr(), nullptr, &dst_rect);
   }
 
-  void resize(uint32_t tex_id, uint16_t new_width, uint16_t new_height) {
+  void resize(uint32_t tex_id, uint16_t new_width, uint16_t new_height) noexcept {
     if (tex_id >= textures_.size()) {
       return;
     }
@@ -163,14 +164,14 @@ class texture_manager {
     dimentions_[tex_id] = {.width = new_width, .height = new_height};
   }
 
-  void set_name(uint32_t tex_id, std::string name) {
+  void set_name(uint32_t tex_id, std::string name) noexcept {
     if (tex_id >= textures_.size()) {
       return;
     }
     name_to_id_[name] = tex_id;
   }
 
-  uint32_t get_id(const std::string& name) const {
+  uint32_t get_id(const std::string& name) const noexcept {
     if (auto it = name_to_id_.find(name); it != name_to_id_.end()) {
       return it->second;
     }

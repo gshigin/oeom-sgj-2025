@@ -5,7 +5,7 @@
 
 // entity
 struct handler_id {
-  uint16_t position_id;
+  uint16_t position_id;  // position id is unique key for handler
   uint16_t dimention_id;
   uint16_t texture_id;
   uint16_t motion_id;
@@ -89,8 +89,11 @@ struct ECS {
   std::vector<draggable> draggs;
   std::vector<mouse_trackable> tracks;
 
+  // to delete
+  std::vector<uint16_t> to_delete;
+
   // register entity
-  handler_id register_object(float x, float y) {
+  handler_id register_object(float x, float y) noexcept {
     handler_id h{.position_id = static_cast<uint16_t>(positions.size()),
                  .dimention_id = kNoId,
                  .texture_id = kNoId,
@@ -98,38 +101,55 @@ struct ECS {
                  .drag_id = kNoId,
                  .tracker_id = kNoId};
     positions.emplace_back(x, y);
+    handlers.emplace_back(h);
 
     return h;
   }
 
+  void destroy_entity(const handler_id& h) noexcept { to_delete.emplace_back(h.position_id); }
+  void destroy_entity(uint16_t position_id) noexcept { to_delete.emplace_back(position_id); }
+
+  void cleanup() noexcept {
+    for (const auto pos_id : to_delete) {
+      SDL_Log("deleting entt %d\n", pos_id);
+      std::erase_if(handlers, [&](const handler_id& h) { return h.position_id == pos_id; });
+
+      std::erase_if(draggs, [&](const draggable& sys) { return sys.position_id == pos_id; });
+      std::erase_if(draws, [&](const drawable& sys) { return sys.position_id == pos_id; });
+      std::erase_if(tracks, [&](const mouse_trackable& sys) { return sys.position_id == pos_id; });
+    }
+
+    to_delete.clear();
+  }
+
   // attach component
-  void add_tracker(handler_id& handler, float x, float y, float r) {
+  void add_tracker(handler_id& handler, float x, float y, float r) noexcept {
     handler.tracker_id = trackers.size();
     trackers.emplace_back(x, y, r);
 
     tracks.emplace_back(handler.position_id, handler.tracker_id);
   }
 
-  void add_dimetions(handler_id& handler, float w, float h) {
+  void add_dimetions(handler_id& handler, float w, float h) noexcept {
     handler.dimention_id = dimentions.size();
     dimentions.emplace_back(w, h);
   }
 
-  void add_drag(handler_id& h) {
+  void add_drag(handler_id& h) noexcept {
     h.drag_id = drags.size();
     drags.emplace_back(0.f, 0.f);
   }
 
-  void add_texture(handler_id& h, uint16_t texture_id) {
+  void add_texture(handler_id& h, uint16_t texture_id) noexcept {
     h.texture_id = texture_id;
 
     draws.emplace_back(h.position_id, h.texture_id);
   }
 
-  void make_draggable(handler_id& h) { draggs.emplace_back(h.position_id, h.dimention_id, h.drag_id, false); }
+  void make_draggable(handler_id& h) noexcept { draggs.emplace_back(h.position_id, h.dimention_id, h.drag_id, false); }
 
   // logic
-  void move_dragged() {
+  void move_dragged() noexcept {
     float x = -1.f, y = -1.f;
     SDL_GetMouseState(&x, &y);
 
@@ -144,7 +164,7 @@ struct ECS {
     }
   }
 
-  void move_tracked() {
+  void move_tracked() noexcept {
     for (const auto sys : tracks) {
       auto& pos = positions[sys.position_id];
       const auto& anc = trackers[sys.tracker_id];
@@ -175,7 +195,7 @@ struct ECS {
     }
   }
 
-  void handle_event(SDL_Event& e) {
+  void handle_event(SDL_Event& e) noexcept {
     if (e.type == SDL_EVENT_MOUSE_MOTION) {
       move_tracked();
       move_dragged();
@@ -184,6 +204,10 @@ struct ECS {
     else if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && !(SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_LEFT)) {
       // nobody is dragged!
       for (auto& drag_sys : draggs) {
+        if (drag_sys.is_dragged == true) {
+          SDL_Log("marking entt %d for delete\n", drag_sys.position_id);
+          destroy_entity(drag_sys.position_id);
+        }
         drag_sys.is_dragged = false;
       }
     }
@@ -208,7 +232,7 @@ struct ECS {
   }
 
   // factories
-  handler_id create_dot(float x, float y, float dot_r, float anchor_r) {
+  handler_id create_dot(float x, float y, float dot_r, float anchor_r) noexcept {
     auto h = register_object(x, y);
 
     add_texture(h, manager.get_id("dot"));
@@ -218,7 +242,7 @@ struct ECS {
     return h;
   }
 
-  handler_id create_tomato(float x, float y) {
+  handler_id create_tomato(float x, float y) noexcept {
     auto h = register_object(x, y);
 
     add_texture(h, manager.get_id("tomato"));
@@ -231,7 +255,7 @@ struct ECS {
     return h;
   }
 
-  handler_id create_bg() {
+  handler_id create_bg() noexcept {
     auto h = register_object(kScreenWidth / 2, kScreenHeight / 2);
     add_texture(h, manager.get_id("jokr"));
     manager.resize(h.texture_id, kScreenWidth, kScreenHeight);
@@ -239,7 +263,7 @@ struct ECS {
     return h;
   }
 
-  void render() {
+  void render() noexcept {
     for (auto dr : draws) {
       const auto& pos = positions[dr.position_id];
 
