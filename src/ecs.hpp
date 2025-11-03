@@ -217,7 +217,7 @@ struct ECS {
 
   void move_tracked() noexcept {
     static constexpr float stiffness = 400.0f;
-    static constexpr float damping = 30.0f;
+    static constexpr float damping = 15.0f;
 
     float x_target, y_target;
 

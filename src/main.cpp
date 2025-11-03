@@ -83,9 +83,11 @@ int main(int argc, char* args[]) {
   float center_x = 1.f * kScreenWidth / 2;
   float center_y = 1.f * kScreenHeight / 2;
 
-  handler_id dot1 = ecs.create_dot(1.f * kScreenWidth / 2 - 35, 1.f * kScreenHeight / 2 - 115, 20, 20);
-  handler_id dot2 = ecs.create_dot(1.f * kScreenWidth / 2 + 128, 1.f * kScreenHeight / 2 - 115, 20, 20);
+  handler_id dot1 = ecs.create_dot(1.f * kScreenWidth / 2 - 35, 1.f * kScreenHeight / 2 - 115, 20, 15);
+  handler_id dot2 = ecs.create_dot(1.f * kScreenWidth / 2 + 128, 1.f * kScreenHeight / 2 - 115, 20, 15);
   handler_id jokr = ecs.create_bg();
+
+  handler_id tomato = ecs.create_tomato(kScreenWidth / 4, kScreenWidth / 4);
 
   game_loop(ecs, renderer);
 
