@@ -85,7 +85,7 @@ struct clickable {
 struct trigger_zone {
   uint16_t position_id;
   uint16_t obj_size_id;
-  bool is_is_zone;
+  bool is_in_zone;
   // enter_event_id
   // leave_event_id
   // triggered_texture_id
@@ -283,13 +283,13 @@ struct ECS {
         const auto& pos = positions[zone_sys.position_id];
 
         const bool is_now_in_zone = (pos.x - dim.width / 2 <= x && x <= pos.x + dim.width / 2 && pos.y - dim.height / 2 <= y && y <= pos.y + dim.height / 2);
-        if (is_now_in_zone ^ zone_sys.is_is_zone) {
-          if (zone_sys.is_is_zone) {
+        if (is_now_in_zone ^ zone_sys.is_in_zone) {
+          if (zone_sys.is_in_zone) {
             SDL_Log("Zone %d is left; trigger leave event\n", zone_sys.position_id);
           } else {
             SDL_Log("Zone %d is entered; trigger enter event\n", zone_sys.position_id);
           }
-          zone_sys.is_is_zone = !zone_sys.is_is_zone;
+          zone_sys.is_in_zone = !zone_sys.is_in_zone;
         }
       }
     }
