@@ -1,5 +1,9 @@
 #pragma once
 
-constexpr int kScreenWidth{640};
-constexpr int kScreenHeight{480};
-constexpr int kScreenFps{60};
+#include <cstdint>
+
+constexpr uint64_t kScreenWidth{640};
+constexpr uint64_t kScreenHeight{480};
+
+constexpr uint64_t kScreenFps{60};
+constexpr uint64_t kNsPerFrame = 1'000'000'000 / kScreenFps;

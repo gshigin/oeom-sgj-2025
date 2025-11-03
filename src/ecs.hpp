@@ -34,8 +34,8 @@ struct texture_size {
 struct motion {
   float dx;
   float dy;
-  float ddx;
-  float ddy;
+  float ax;
+  float ay;
 };
 
 struct drag {
@@ -70,6 +70,7 @@ struct draggable {
 struct mouse_trackable {
   uint16_t position_id;
   uint16_t tracker_id;
+  uint16_t motion_id;
 };
 
 struct clickable {
@@ -159,7 +160,9 @@ struct ECS {
     handler.tracker_id = trackers.size();
     trackers.emplace_back(x, y, r);
 
-    tracks.emplace_back(handler.position_id, handler.tracker_id);
+    make_movable(handler);
+
+    tracks.emplace_back(handler.position_id, handler.tracker_id, handler.motion_id);
   }
 
   void add_dimetions(handler_id& handler, float w, float h) noexcept {
@@ -189,6 +192,12 @@ struct ECS {
   void make_draggable(handler_id& h) noexcept { draggs.emplace_back(h.position_id, h.obj_size_id, h.drag_id, false); }
   void make_clickable(handler_id& h) noexcept { buttons.emplace_back(h.position_id, h.obj_size_id, false); }
   void make_triggerable(handler_id& h) noexcept { zones.emplace_back(h.position_id, h.obj_size_id, false); }
+  void make_movable(handler_id& h) noexcept {
+    h.motion_id = motions.size();
+    motions.emplace_back(0.f, 0.f, 0.f, 0.f);
+
+    movs.emplace_back(h.position_id, h.motion_id);
+  }
 
   // logic
   void move_dragged() noexcept {
@@ -207,13 +216,19 @@ struct ECS {
   }
 
   void move_tracked() noexcept {
+    static constexpr float stiffness = 400.0f;
+    static constexpr float damping = 30.0f;
+
+    float x_target, y_target;
+
     for (const auto sys : tracks) {
       auto& pos = positions[sys.position_id];
       const auto& anc = trackers[sys.tracker_id];
+      auto& vel = motions[sys.motion_id];
 
       if (SDL_GetMouseFocus() == nullptr) {
-        pos.x = anc.anchor_x;
-        pos.y = anc.anchor_y;
+        x_target = anc.anchor_x;
+        y_target = anc.anchor_y;
       } else {
         // Get mouse position
         float x = -1.f, y = -1.f;
@@ -231,9 +246,15 @@ struct ECS {
         x_vec /= norm;
         y_vec /= norm;
 
-        pos.x = anc.max_radius * x_vec + x_anc;
-        pos.y = anc.max_radius * y_vec + y_anc;
+        x_target = anc.max_radius * x_vec + x_anc;
+        y_target = anc.max_radius * y_vec + y_anc;
       }
+
+      float target_dx = x_target - pos.x;
+      float target_dy = y_target - pos.y;
+
+      vel.ax = stiffness * target_dx - damping * vel.dx;
+      vel.ay = stiffness * target_dy - damping * vel.dy;
     }
   }
 
@@ -242,9 +263,6 @@ struct ECS {
     SDL_GetMouseState(&x, &y);
 
     if (e.type == SDL_EVENT_MOUSE_MOTION) {
-      move_tracked();
-      move_dragged();
-
       // mouse might leave button
       for (auto& click_sys : buttons) {
         if (click_sys.is_pressed) [[unlikely]] {
@@ -366,6 +384,20 @@ struct ECS {
       const auto& dim = texture_sizes[dr.tex_size_id];
 
       manager.render(renderer, dr.texture_id, pos.x, pos.y, dim.width, dim.height);
+    }
+  }
+
+  void move() noexcept {
+    static constexpr float dt = 1.0 / kScreenFps;
+    for (auto mv : movs) {
+      auto& pos = positions[mv.position_id];
+      auto& vel = motions[mv.motion_id];
+
+      vel.dx += vel.ax * dt;
+      vel.dy += vel.ay * dt;
+
+      pos.x += vel.dx * dt;
+      pos.y += vel.dy * dt;
     }
   }
 };

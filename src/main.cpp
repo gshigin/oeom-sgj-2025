@@ -34,6 +34,11 @@ void game_loop(ECS& ecs, SDL_Renderer* renderer) noexcept {
     }
     ecs.cleanup();
 
+    ecs.move_dragged();
+    ecs.move_tracked();
+
+    ecs.move();
+
     SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, 0xFF);
     SDL_RenderClear(renderer);
 
@@ -41,10 +46,9 @@ void game_loop(ECS& ecs, SDL_Renderer* renderer) noexcept {
 
     SDL_RenderPresent(renderer);
 
-    constexpr uint64_t nsPerFrame = 1'000'000'000 / kScreenFps;
     uint64_t frameNs = cap_timer.get_ticks_ns();
-    if (frameNs < nsPerFrame) {
-      SDL_DelayNS(nsPerFrame - frameNs);
+    if (frameNs < kNsPerFrame) {
+      SDL_DelayNS(kNsPerFrame - frameNs);
     }
   }
 }
@@ -79,41 +83,9 @@ int main(int argc, char* args[]) {
   float center_x = 1.f * kScreenWidth / 2;
   float center_y = 1.f * kScreenHeight / 2;
 
-  // handler_id dot1 = ecs.create_dot(1.f * kScreenWidth / 2 - 35, 1.f * kScreenHeight / 2 - 115, 20, 20);
-  // handler_id dot2 = ecs.create_dot(1.f * kScreenWidth / 2 + 128, 1.f * kScreenHeight / 2 - 115, 20, 20);
-  // handler_id jokr = ecs.create_bg();
-
-  handler_id dot1 = ecs.create_dot(center_x + 100, center_y, 20, 20);
-  handler_id dot2 = ecs.create_dot(center_x - 100, center_y, 20, 20);
-  handler_id dot3 = ecs.create_dot(center_x + 60, center_y + 80, 20, 20);
-  handler_id dot4 = ecs.create_dot(center_x + 60, center_y - 80, 20, 20);
-  handler_id dot5 = ecs.create_dot(center_x - 60, center_y + 80, 20, 20);
-  handler_id dot6 = ecs.create_dot(center_x - 60, center_y - 80, 20, 20);
-
-  handler_id tomato1 = ecs.create_tomato(1.f * kScreenWidth / 4, 1.f * kScreenHeight / 4);
-  handler_id tomato2 = ecs.create_tomato(3.f * kScreenWidth / 4, 3.f * kScreenHeight / 4);
-  handler_id tomato3 = ecs.create_tomato(1.f * kScreenWidth / 4, 3.f * kScreenHeight / 4);
-  handler_id tomato4 = ecs.create_tomato(3.f * kScreenWidth / 4, 1.f * kScreenHeight / 4);
-
-  handler_id button0 = ecs.register_object(1.f * kScreenWidth / 2, 1.f * kScreenHeight / 2);
-  ecs.add_dimetions(button0, 70, 70);
-  ecs.add_texture(button0, manager.get_texture_id("bear"), 70, 70);
-  ecs.make_clickable(button0);
-
-  handler_id button1 = ecs.register_object(1.f * kScreenWidth / 2, 1.f * kScreenHeight / 2 - 100);
-  ecs.add_dimetions(button1, 70, 70);
-  ecs.add_texture(button1, manager.get_texture_id("bear"), 70, 70);
-  ecs.make_clickable(button1);
-
-  handler_id zone0 = ecs.register_object(1.f * kScreenWidth / 2, 1.f * kScreenHeight / 2 + 75);
-  ecs.add_dimetions(zone0, 100, 70);
-  ecs.add_texture(zone0, manager.get_texture_id("zone"), 100, 70);
-  ecs.make_triggerable(zone0);
-
-  handler_id zone1 = ecs.register_object(1.f * kScreenWidth / 2 - 200, 1.f * kScreenHeight / 2);
-  ecs.add_dimetions(zone1, 100, 70);
-  ecs.add_texture(zone1, manager.get_texture_id("zone"), 100, 70);
-  ecs.make_triggerable(zone1);
+  handler_id dot1 = ecs.create_dot(1.f * kScreenWidth / 2 - 35, 1.f * kScreenHeight / 2 - 115, 20, 20);
+  handler_id dot2 = ecs.create_dot(1.f * kScreenWidth / 2 + 128, 1.f * kScreenHeight / 2 - 115, 20, 20);
+  handler_id jokr = ecs.create_bg();
 
   game_loop(ecs, renderer);
 
