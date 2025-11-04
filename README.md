@@ -14,7 +14,7 @@ Created in 72 hours for **Siberian Game Jam - November 2025**
 - **Theme:** Прозрение (Prozrenie, en Epiphany)
 - **Elemnet:** Щ (russian letter "sch")
 - **Duration:** 72 hours  
-- **Team:** Solo project (code, design, photos by gshigin)  
+- **Team:** Solo project (code, design, photos, textures by gshigin)  
 - **Jam page:** https://itch.io/jam/sibgamejam-nov-2025
 
 ## Technical Details
