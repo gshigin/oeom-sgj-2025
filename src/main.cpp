@@ -79,7 +79,7 @@ int main(int argc, char* args[]) {
     return 3;
   }
 
-  if (SDL_Surface* icon = IMG_Load("assets/icon.png"); icon == false) {
+  if (SDL_Surface* icon = IMG_Load("assets/icon.png"); icon == nullptr) {
     SDL_Log("Unable to load image %s! SDL_image error: %s\n", "assets/icon.png", SDL_GetError());
   } else {
     SDL_SetWindowIcon(window, icon);
@@ -90,7 +90,7 @@ int main(int argc, char* args[]) {
   std::string fontPath{"assets/press_start.ttf"};
   if (font = TTF_OpenFont(fontPath.c_str(), 56); font == nullptr) {
     SDL_Log("Could not load %s! SDL_ttf Error: %s\n", fontPath.c_str(), SDL_GetError());
-    return false;
+    return 4;
   }
 
   texture_manager manager;
@@ -101,7 +101,7 @@ int main(int argc, char* args[]) {
     TTF_CloseFont(font);
     SDL_Quit();
     TTF_Quit();
-    return 4;
+    return 5;
   }
 
   // init ecs
