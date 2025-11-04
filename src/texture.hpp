@@ -20,6 +20,10 @@ class texture {
 
   texture(texture&& other) noexcept : texture_ptr_{std::exchange(other.texture_ptr_, nullptr)} {}
   texture& operator=(texture&& other) noexcept {
+    if (texture_ptr_ != nullptr) {
+      SDL_DestroyTexture(texture_ptr_);
+    }
+
     texture_ptr_ = std::exchange(other.texture_ptr_, nullptr);
     return *this;
   }
@@ -154,7 +158,11 @@ class texture_manager {
                                           uint8_t green,
                                           uint8_t blue,
                                           uint8_t alpha) noexcept {
-    SDL_Log("textures: %zu\n", textures_.size());
+    auto tex_id = get_texture_id(name);
+    if (tex_id == kNoImage) {
+      return kNoImage;
+    }
+
     if (SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), 0, SDL_Color{red, green, blue, alpha}); textSurface == nullptr) {
       SDL_Log("Unable to render text surface! SDL_ttf Error: %s\n", SDL_GetError());
       return std::numeric_limits<uint32_t>::max();
@@ -163,12 +171,8 @@ class texture_manager {
         SDL_Log("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
         return std::numeric_limits<uint32_t>::max();
       } else {
-        textures_.emplace_back(internal_texture);
-        dimentions_.emplace_back(textSurface->w, textSurface->h);
-
-        if (!name.empty()) {
-          name_to_id_[name] = textures_.size() - 1;
-        }
+        textures_[tex_id] = std::move(texture(internal_texture));
+        dimentions_[tex_id] = {static_cast<uint16_t>(textSurface->w), static_cast<uint16_t>(textSurface->h)};
       }
 
       SDL_DestroySurface(textSurface);

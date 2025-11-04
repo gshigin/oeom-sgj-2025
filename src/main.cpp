@@ -10,18 +10,14 @@
 
 // Texture loading
 bool load_assets(SDL_Renderer* renderer, TTF_Font* font, texture_manager& texman) noexcept {
-  std::string fontPath{"assets/press_start.ttf"};
-  if (font = TTF_OpenFont(fontPath.c_str(), 28); font == nullptr) {
-    SDL_Log("Could not load %s! SDL_ttf Error: %s\n", fontPath.c_str(), SDL_GetError());
-    return false;
-  }
-
+  texman.load_texture_named(renderer, "assets/frame.png", "frame");
   texman.load_texture_named(renderer, "assets/banana.png", "banana");
   texman.load_texture_named(renderer, "assets/beer.png", "beer");
   texman.load_texture_named(renderer, "assets/cake.png", "cake");
   texman.load_texture_named(renderer, "assets/glue.png", "glue");
   texman.load_texture_named(renderer, "assets/head0_128.png", "head0_128");
   texman.load_texture_named(renderer, "assets/head0_256.png", "head0_256");
+  texman.load_texture_named(renderer, "assets/head1_256.png", "head1_256");
   texman.load_texture_named(renderer, "assets/kormen.png", "kormen");
   texman.load_texture_named(renderer, "assets/krieg.png", "krieg");
   texman.load_texture_named(renderer, "assets/left_eye.png", "left_eye");
@@ -33,13 +29,12 @@ bool load_assets(SDL_Renderer* renderer, TTF_Font* font, texture_manager& texman
   texman.load_texture_named(renderer, "assets/wiskey1.png", "wiskey1");
   texman.load_texture_named(renderer, "assets/wiskey2.png", "wiskey2");
   texman.load_texture_named(renderer, "assets/room.png", "room");
-
-  texman.load_texture_from_text_named(renderer, font, "1234", "score", 0x00, 0x00, 0x00, 0xFF);
+  texman.load_texture_from_text_named(renderer, font, "000000", "score", 0x00, 0x00, 0x00, 0xFF);
 
   return true;
 }
 
-void game_loop(ECS& ecs, SDL_Renderer* renderer) noexcept {
+void game_loop(ECS& ecs, game_state& state, SDL_Renderer* renderer) noexcept {
   bool quit = false;
   SDL_Event e;
   timer cap_timer;
@@ -51,12 +46,14 @@ void game_loop(ECS& ecs, SDL_Renderer* renderer) noexcept {
       if (e.type == SDL_EVENT_QUIT)
         quit = true;
       else
-        ecs.handle_event(e);
+        ecs.handle_event(e, state);
     }
+
     ecs.cleanup();
 
     ecs.move_dragged();
-    ecs.move_tracked();
+    ecs.move_tracked(state);
+    ecs.loop_logic(state);
 
     ecs.move();
 
@@ -71,6 +68,7 @@ void game_loop(ECS& ecs, SDL_Renderer* renderer) noexcept {
     if (frameNs < kNsPerFrame) {
       SDL_DelayNS(kNsPerFrame - frameNs);
     }
+    ++state.frame_counter;
   }
 }
 
@@ -87,14 +85,27 @@ int main(int argc, char* args[]) {
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
 
-  if (SDL_CreateWindowAndRenderer("All eyes on me", kScreenWidth, kScreenHeight, 0, &window, &renderer) == false) {
+  if (SDL_CreateWindowAndRenderer("All Eyes On Me", kScreenWidth, kScreenHeight, 0, &window, &renderer) == false) {
     SDL_Log("SDL_CreateWindowAndRenderer failed: %s", SDL_GetError());
     SDL_Quit();
     return 3;
   }
 
-  texture_manager manager;
+  if (SDL_Surface* icon = IMG_Load("assets/icon.png"); icon == false) {
+    SDL_Log("Unable to load image %s! SDL_image error: %s\n", "assets/icon.png", SDL_GetError());
+  } else {
+    SDL_SetWindowIcon(window, icon);
+    SDL_DestroySurface(icon);
+  }
+
   TTF_Font* font = nullptr;
+  std::string fontPath{"assets/press_start.ttf"};
+  if (font = TTF_OpenFont(fontPath.c_str(), 56); font == nullptr) {
+    SDL_Log("Could not load %s! SDL_ttf Error: %s\n", fontPath.c_str(), SDL_GetError());
+    return false;
+  }
+
+  texture_manager manager;
   if (load_assets(renderer, font, manager) == false) {
     SDL_Log("Unable to load assets!");
     SDL_DestroyRenderer(renderer);
@@ -106,7 +117,8 @@ int main(int argc, char* args[]) {
   }
 
   // init ecs
-  ECS ecs(renderer, manager);
+  ECS ecs(renderer, font, manager);
+  game_state state{0, 0, false, 100};
 
   float center_x = 1.f * kScreenWidth / 2;
   float center_y = 1.f * kScreenHeight / 2;
@@ -114,25 +126,32 @@ int main(int argc, char* args[]) {
   auto room_id = ecs.register_object(center_x, center_y);
   ecs.add_texture(room_id, manager.get_texture_id("room"), kScreenWidth, kScreenHeight);
 
-  auto leye_id = ecs.register_object(335, 332);
+  auto leye_id = ecs.register_object(335, 330 + 70);
   ecs.add_texture(leye_id, manager.get_texture_id("left_eye"), 100, 100);
-  ecs.add_tracker(leye_id, 335, 332, 18);
+  ecs.add_tracker(leye_id, 335, 330, 23);
 
-  auto reye_id = ecs.register_object(462, 337);
+  auto reye_id = ecs.register_object(462, 335 + 70);
   ecs.add_texture(reye_id, manager.get_texture_id("right_eye"), 100, 100);
-  ecs.add_tracker(reye_id, 462, 337, 18);
+  ecs.add_tracker(reye_id, 462, 335, 23);
 
-  auto head_id = ecs.register_object(center_x, center_y + 80);
+  auto head_id = ecs.register_object(center_x, center_y + 180);
   ecs.add_texture(head_id, manager.get_texture_id("head0_256"), 512, 512);
-  ecs.add_tracker(head_id, center_x, center_y + 80, 5);
+  ecs.add_tracker(head_id, center_x, center_y + 80, 10);
+  state.head_texture_next = manager.get_texture_id("head1_256");
+  state.head_id = head_id.position_id;
+
+  auto head_trigger_id = ecs.register_object(center_x, center_y);
+  // ecs.add_texture(head_trigger_id, manager.get_texture_id("frame"), 230, 200);
+  ecs.add_dimetions(head_trigger_id, 230, 200);
+  ecs.make_clickable(head_trigger_id);
 
   auto table_id = ecs.register_object(center_x, center_y + 200);
   ecs.add_texture(table_id, manager.get_texture_id("table"), 800, 200);
 
-  auto score_id = ecs.register_object(center_x, center_y + 200);
-  ecs.add_texture(score_id, manager.get_texture_id("score"), 80, 20);
+  auto score_id = ecs.register_object(122, 38);
+  ecs.add_texture(score_id, manager.get_texture_id("score"), 224, 56);
 
-  game_loop(ecs, renderer);
+  game_loop(ecs, state, renderer);
 
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
