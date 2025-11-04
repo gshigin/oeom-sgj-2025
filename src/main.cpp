@@ -10,24 +10,11 @@
 
 // Texture loading
 bool load_assets(SDL_Renderer* renderer, TTF_Font* font, texture_manager& texman) noexcept {
-  texman.load_texture_named(renderer, "assets/frame.png", "frame");
-  texman.load_texture_named(renderer, "assets/banana.png", "banana");
-  texman.load_texture_named(renderer, "assets/beer.png", "beer");
-  texman.load_texture_named(renderer, "assets/cake.png", "cake");
-  texman.load_texture_named(renderer, "assets/glue.png", "glue");
-  texman.load_texture_named(renderer, "assets/head0_128.png", "head0_128");
   texman.load_texture_named(renderer, "assets/head0_256.png", "head0_256");
   texman.load_texture_named(renderer, "assets/head1_256.png", "head1_256");
-  texman.load_texture_named(renderer, "assets/kormen.png", "kormen");
-  texman.load_texture_named(renderer, "assets/krieg.png", "krieg");
   texman.load_texture_named(renderer, "assets/left_eye.png", "left_eye");
   texman.load_texture_named(renderer, "assets/right_eye.png", "right_eye");
-  texman.load_texture_named(renderer, "assets/rubik.png", "rubik");
-  texman.load_texture_named(renderer, "assets/sirok.png", "sirok");
   texman.load_texture_named(renderer, "assets/table.png", "table");
-  texman.load_texture_named(renderer, "assets/trusi.png", "trusi");
-  texman.load_texture_named(renderer, "assets/wiskey1.png", "wiskey1");
-  texman.load_texture_named(renderer, "assets/wiskey2.png", "wiskey2");
   texman.load_texture_named(renderer, "assets/room.png", "room");
   texman.load_texture_from_text_named(renderer, font, "000000", "score", 0x00, 0x00, 0x00, 0xFF);
 
@@ -77,6 +64,7 @@ int main(int argc, char* args[]) {
     SDL_Log("SDL_Init failed: %s", SDL_GetError());
     return 1;
   }
+
   if (TTF_Init() == false) {
     SDL_Log("TTF_Init failed: %s\n", SDL_GetError());
     return 2;
@@ -141,7 +129,6 @@ int main(int argc, char* args[]) {
   state.head_id = head_id.position_id;
 
   auto head_trigger_id = ecs.register_object(center_x, center_y);
-  // ecs.add_texture(head_trigger_id, manager.get_texture_id("frame"), 230, 200);
   ecs.add_dimetions(head_trigger_id, 230, 200);
   ecs.make_clickable(head_trigger_id);
 

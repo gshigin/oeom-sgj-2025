@@ -14,7 +14,7 @@ add_executable(AllEyesOnMe src/main.cpp resources.rc)
 target_link_libraries(AllEyesOnMe PRIVATE SDL3_image::SDL3_image SDL3::SDL3 SDL3_ttf::SDL3_ttf)
 
 add_custom_target(clear_assets ALL
-    COMMAND ${CMAKE_COMMAND} -E rm -r
+    COMMAND ${CMAKE_COMMAND} -E rm -rf
             "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets"
     COMMENT "Clearing assets..."
 )
