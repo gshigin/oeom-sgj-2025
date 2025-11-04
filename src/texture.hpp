@@ -123,6 +123,38 @@ class texture_manager {
                                         uint8_t green,
                                         uint8_t blue,
                                         uint8_t alpha) noexcept {
+    SDL_Log("textures: %zu\n", textures_.size());
+    if (SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), 0, SDL_Color{red, green, blue, alpha}); textSurface == nullptr) {
+      SDL_Log("Unable to render text surface! SDL_ttf Error: %s\n", SDL_GetError());
+      return std::numeric_limits<uint32_t>::max();
+    } else {
+      if (SDL_Texture* internal_texture = SDL_CreateTextureFromSurface(renderer, textSurface); internal_texture == nullptr) {
+        SDL_Log("Unable to create texture from rendered text! SDL Error: %s\n", SDL_GetError());
+        return std::numeric_limits<uint32_t>::max();
+      } else {
+        textures_.emplace_back(internal_texture);
+        dimentions_.emplace_back(textSurface->w, textSurface->h);
+
+        if (!name.empty()) {
+          name_to_id_[name] = textures_.size() - 1;
+        }
+      }
+
+      SDL_DestroySurface(textSurface);
+    }
+
+    return textures_.size() - 1;
+  }
+
+  uint32_t update_texture_from_text_named(SDL_Renderer* renderer,
+                                          TTF_Font* font,
+                                          const std::string& text,
+                                          const std::string& name,
+                                          uint8_t red,
+                                          uint8_t green,
+                                          uint8_t blue,
+                                          uint8_t alpha) noexcept {
+    SDL_Log("textures: %zu\n", textures_.size());
     if (SDL_Surface* textSurface = TTF_RenderText_Blended(font, text.c_str(), 0, SDL_Color{red, green, blue, alpha}); textSurface == nullptr) {
       SDL_Log("Unable to render text surface! SDL_ttf Error: %s\n", SDL_GetError());
       return std::numeric_limits<uint32_t>::max();

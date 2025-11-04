@@ -239,7 +239,7 @@ struct ECS {
 
         float x_vec = x - x_anc;
         float y_vec = y - y_anc;
-        const float z_vec = 200;
+        const float z_vec = 300;
 
         float norm = std::sqrt(x_vec * x_vec + y_vec * y_vec + z_vec * z_vec);
 
@@ -295,6 +295,7 @@ struct ECS {
     }
 
     else if (e.type == SDL_EVENT_MOUSE_BUTTON_DOWN && (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_MASK(SDL_BUTTON_LEFT))) {
+      SDL_Log("%f, %f\n", x, y);
       // someone can be dragged!
       for (auto& drag_sys : draggs) {
         auto& dr = drags[drag_sys.drag_id];
@@ -345,37 +346,6 @@ struct ECS {
         }
       }
     }
-  }
-
-  // factories
-  handler_id create_dot(float x, float y, float dot_r, float anchor_r) noexcept {
-    auto h = register_object(x, y);
-
-    add_texture(h, manager.get_texture_id("dot"));
-
-    add_tracker(h, x, y, anchor_r);
-
-    return h;
-  }
-
-  handler_id create_tomato(float x, float y) noexcept {
-    auto h = register_object(x, y);
-
-    add_texture(h, manager.get_texture_id("tomato"));
-
-    add_dimetions(h, 30, 30);
-    add_drag(h);
-
-    make_draggable(h);
-
-    return h;
-  }
-
-  handler_id create_bg() noexcept {
-    auto h = register_object(kScreenWidth / 2, kScreenHeight / 2);
-    add_texture(h, manager.get_texture_id("jokr"), kScreenWidth, kScreenHeight);
-
-    return h;
   }
 
   void render() noexcept {
