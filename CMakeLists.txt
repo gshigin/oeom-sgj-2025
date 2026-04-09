@@ -1,36 +1,19 @@
-cmake_minimum_required(VERSION 3.27)
-project(SibGamJam)
+cmake_minimum_required(VERSION 3.24)
+
+# Super-repo: game sources in `game/`, engine `meh` as git submodule.
+# `meh` must load first so all targets exist before `game/` (see meh/README.md).
+project(
+    AllEyesOnMe
+    VERSION 0.0.0
+    LANGUAGES CXX
+)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/$<CONFIGURATION>")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}" CACHE INTERNAL "")
-
-add_subdirectory(external)
-
-add_executable(AllEyesOnMe src/main.cpp resources.rc)
-target_link_libraries(AllEyesOnMe PRIVATE SDL3_image::SDL3_image SDL3::SDL3 SDL3_ttf::SDL3_ttf)
-
-add_custom_target(clear_assets ALL
-    COMMAND ${CMAKE_COMMAND} -E rm -rf
-            "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets"
-    COMMENT "Clearing assets..."
-)
-
-add_custom_target(copy_assets ALL
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/assets"
-            "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets"
-    COMMENT "Copying assets..."
-)
-
-add_dependencies(AllEyesOnMe copy_assets)
-add_dependencies(copy_assets clear_assets)
-
-if(WIN32)
-    set_target_properties(AllEyesOnMe PROPERTIES
-        WIN32_EXECUTABLE $<CONFIG:Release>
-    )
-endif()
+# `meh` is a submodule; if configure fails, run: git submodule update --init --recursive
+add_subdirectory(meh)
+add_subdirectory(game)
