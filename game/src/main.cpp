@@ -73,10 +73,16 @@ int main(int /*argc*/, char* /*args*/[]) {
   SDL_Window* window = nullptr;
   SDL_Renderer* renderer = nullptr;
 
-  if (SDL_CreateWindowAndRenderer("All Eyes On Me", kScreenWidth, kScreenHeight, 0, &window, &renderer) == false) {
-    SDL_Log("SDL_CreateWindowAndRenderer failed: %s", SDL_GetError());
+  if (window = SDL_CreateWindow("All Eyes On Me", kScreenWidth, kScreenHeight, 0), window == nullptr) {
+    SDL_Log("SDL_CreateWindow failed: %s", SDL_GetError());
     SDL_Quit();
     return 3;
+  }
+
+  if (renderer = SDL_CreateRenderer(window, nullptr), renderer == nullptr) {
+    SDL_Log("SDL_CreateRenderer failed: %s", SDL_GetError());
+    SDL_Quit();
+    return 4;
   }
 
   if (SDL_Surface* icon = IMG_Load("assets/icon.png"); icon == nullptr) {
@@ -113,8 +119,7 @@ int main(int /*argc*/, char* /*args*/[]) {
   float center_y = 1.f * kScreenHeight / 2;
 
   auto room_id = ecs.register_object(center_x, center_y);
-  ecs.add_texture(room_id, static_cast<uint16_t>(manager.get_texture_id("room")),
-                  static_cast<float>(kScreenWidth), static_cast<float>(kScreenHeight));
+  ecs.add_texture(room_id, static_cast<uint16_t>(manager.get_texture_id("room")), static_cast<float>(kScreenWidth), static_cast<float>(kScreenHeight));
 
   auto leye_id = ecs.register_object(335, 330 + 70);
   ecs.add_texture(leye_id, static_cast<uint16_t>(manager.get_texture_id("left_eye")), 100, 100);
